@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tao远程小工具</title>
+</head>
+<body>
+  <!-- 在 body 中添加一个 Canvas 元素 -->
+  <canvas id="canvas"></canvas>
+
+  <!-- 引入前端脚本 -->
+  <script>
+    // 获取 DOM 元素
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // 等待画布元素加载
+    window.addEventListener("load", async () => {
+      // 定义函数以便重新连接 WebSocket
+      function connect() {
+        if (ws) { ws.close(); }
+        ws = new WebSocket("ws://127.0.0.1:24331/"); //这个改成你要访问的
+        ws.onopen = () => { console.log("[WebSocket] 已连接"); };
+        ws.onclose = () => { console.log("[WebSocket] 连接断开"); setTimeout(connect, 1000); };
+        ws.onerror = (error) => { console.error("[WebSocket] 错误", error); };
+        ws.onmessage = async (event) => {
+          // 将屏幕截图数据转换为 Image 对象
+          const image = new Image();
+          image.src = "data:image/jpeg;base64," + event.data;
+
+          // 等待图片加载完成
+          await new Promise((resolve) => { image.addEventListener("load", resolve); });
+
+          // 设置 Canvas 大小为图片大小
+          canvas.width = image.width;
+          canvas.height = image.height;
+
+          // 将图片绘制到画布上
+          ctx.drawImage(image, 0, 0);
+
+          // 获取画布像素数据
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          // 处理像素数据
+          // ...
+        };
+      }
+
+      // 连接 WebSocket
+      let ws;
+      connect();
+    });
+  </script>
+</body>
+</html>
